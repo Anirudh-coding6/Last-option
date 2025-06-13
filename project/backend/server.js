@@ -148,3 +148,25 @@ process.on('SIGTERM', () => {
 });
 
 module.exports = app;
+// Show forgot password form
+router.get('/customer/forgot-password', (req, res) => {
+  res.render('forgot-password');
+});
+
+// Show reset form manually (for demo/test only)
+router.get('/customer/reset-password', (req, res) => {
+  res.render('reset-password');
+});
+
+// Handle password reset manually
+router.post('/customer/reset-password', async (req, res) => {
+  const { email, password } = req.body;
+  const customer = await Customer.findOne({ email });
+
+  if (!customer) return res.send('No account found for that email.');
+
+  customer.password = password; // 🔐 bcrypt will hash it before saving (due to pre-save hook)
+  await customer.save();
+
+  res.send('Password updated. <a href="/customer/login">Login</a>');
+});
