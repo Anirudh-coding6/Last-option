@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServiceLead Pro - Customer Portal</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            transition: margin-left 0.3s ease;
+        }
+        .service-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .request-card {
+            border-left: 4px solid;
+            transition: transform 0.2s ease;
+        }
+        .request-card:hover {
+            transform: translateX(5px);
+        }
+        .request-pending { border-left-color: #ffc107; }
+        .request-contacted { border-left-color: #17a2b8; }
+        .request-scheduled { border-left-color: #28a745; }
+        .request-completed { border-left-color: #6c757d; }
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            border-radius: 10px;
+            margin: 5px 10px;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: white !important;
+        }
+        .profile-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar text-white" id="sidebar">
+        <div class="p-4">
+            <div class="d-flex align-items-center mb-4">
+                <div class="profile-img d-flex align-items-center justify-content-center me-3">
+                    <i class="fas fa-user fa-lg"></i>
+                </div>
+                <div>
+                    <h6 class="mb-0" id="customerName">Customer Portal</h6>
+                    <small class="opacity-75">Service Requests</small>
+                </div>
+            </div>
+            <nav class="nav flex-column">
+                <a class="nav-link active" href="#" onclick="showSection('overview')">
+                    <i class="fas fa-tachometer-alt me-2"></i>Overview
+                </a>
+                <a class="nav-link" href="#" onclick="showSection('requests')">
+                    <i class="fas fa-clipboard-list me-2"></i>My Requests
+                </a>
+                <a class="nav-link" href="#" onclick="showSection('new-request')">
+                    <i class="fas fa-plus me-2"></i>New Request
+                </a>
+                <a class="nav-link" href="#" onclick="showSection('appointments')">
+                    <i class="fas fa-calendar me-2"></i>Appointments
+                </a>
+                <a class="nav-link" href="#" onclick="showSection('history')">
+                    <i class="fas fa-history me-2"></i>Service History
+                </a>
+                <a class="nav-link" href="#" onclick="showSection('profile')">
+                    <i class="fas fa-user-cog me-2"></i>Profile
+                </a>
+                <hr class="my-4">
+                <a class="nav-link" href="/">
+                    <i class="fas fa-home me-2"></i>Back to Home
+                </a>
+                <a class="nav-link" href="#" onclick="logout()">
+                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Mobile Menu Button -->
+        <button class="btn btn-primary d-md-none mb-3" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i> Menu
+        </button>
+
+        <!-- Overview Section -->
+        <div id="overview-section" class="section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Customer Dashboard</h2>
+                <div class="text-muted">
+                    <i class="fas fa-calendar me-2"></i>
+                    <span id="currentDate"></span>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-3">
+                    <div class="card service-card text-center p-4" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white;">
+                        <div class="card-body">
+                            <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                            <h3 class="mb-1" id="totalRequests">0</h3>
+                            <p class="mb-0">Total Requests</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card service-card text-center p-4" style="background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%); color: white;">
+                        <div class="card-body">
+                            <i class="fas fa-clock fa-3x mb-3"></i>
+                            <h3 class="mb-1" id="pendingRequests">0</h3>
+                            <p class="mb-0">Pending</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card service-card text-center p-4" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white;">
+                        <div class="card-body">
+                            <i class="fas fa-calendar-check fa-3x mb-3"></i>
+                            <h3 class="mb-1" id="scheduledAppointments">0</h3>
+                            <p class="mb-0">Scheduled</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card service-card text-center p-4" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white;">
+                        <div class="card-body">
+                            <i class="fas fa-check-circle fa-3x mb-3"></i>
+                            <h3 class="mb-1" id="completedServices">0</h3>
+                            <p class="mb-0">Completed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Recent Service Requests</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="recentRequestsList">
+                                <div class="text-center py-4">
+                                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">No service requests yet</p>
+                                    <button class="btn btn-primary" onclick="showSection('new-request')">
+                                        <i class="fas fa-plus me-2"></i>Create Your First Request
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Upcoming Appointments</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="upcomingAppointments">
+                                <div class="text-center py-4">
+                                    <i class="fas fa-calendar fa-2x text-muted mb-3"></i>
+                                    <p class="text-muted">No upcoming appointments</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Requests Section -->
+        <div id="requests-section" class="section" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>My Service Requests</h2>
+                <button class="btn btn-primary" onclick="showSection('new-request')">
+                    <i class="fas fa-plus me-2"></i>New Request
+                </button>
+            </div>
+
+            <!-- Request Status Filters -->
+            <div class="mb-4">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary active" onclick="filterRequests('all')">All</button>
+                    <button type="button" class="btn btn-outline-warning" onclick="filterRequests('pending')">Pending</button>
+                    <button type="button" class="btn btn-outline-info" onclick="filterRequests('contacted')">Contacted</button>
+                    <button type="button" class="btn btn-outline-success" onclick="filterRequests('qualified')">Scheduled</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="filterRequests('completed')">Completed</button>
+                </div>
+            </div>
+
+            <!-- Requests List -->
+            <div id="requestsList"></div>
+        </div>
+
+        <!-- New Request Section -->
+        <div id="new-request-section" class="section" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Submit New Service Request</h2>
+            </div>
+
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-body p-4">
+                            <form id="newRequestForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="requestName" class="form-label">Full Name *</label>
+                                        <input type="text" class="form-control" id="requestName" name="name" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="requestEmail" class="form-label">Email Address *</label>
+                                        <input type="email" class="form-control" id="requestEmail" name="email" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="requestPhone" class="form-label">Phone Number *</label>
+                                        <input type="tel" class="form-control" id="requestPhone" name="phone" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="requestServiceType" class="form-label">Service Type *</label>
+                                        <select class="form-select" id="requestServiceType" name="serviceType" required>
+                                            <option value="">Select a service</option>
+                                            <option value="plumbing">Plumbing</option>
+                                            <option value="electrical">Electrical</option>
+                                            <option value="landscaping">Landscaping</option>
+                                            <option value="hvac">HVAC</option>
+                                            <option value="roofing">Roofing</option>
+                                            <option value="cleaning">Cleaning Services</option>
+                                            <option value="renovation">Home Renovation</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="requestMessage" class="form-label">Project Details</label>
+                                    <textarea class="form-control" id="requestMessage" name="message" rows="4" placeholder="Describe your project or service needs in detail..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 py-3">
+                                    <i class="fas fa-paper-plane me-2"></i>Submit Request
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other sections (appointments, history, profile) -->
+        <div id="appointments-section" class="section" style="display: none;">
+            <h2>Appointments</h2>
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-alt fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Appointments</h4>
+                        <p class="text-muted">Your scheduled appointments will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="history-section" class="section" style="display: none;">
+            <h2>Service History</h2>
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-center py-5">
+                        <i class="fas fa-history fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Service History</h4>
+                        <p class="text-muted">Your completed services will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="profile-section" class="section" style="display: none;">
+            <h2>Profile Settings</h2>
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-cog fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Profile Settings</h4>
+                        <p class="text-muted">Manage your account settings</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-check-circle text-success me-2"></i>Request Submitted!
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Your service request has been submitted successfully!</p>
+                    <p><strong>What happens next:</strong></p>
+                    <ul>
+                        <li>We'll review your request within 2 hours</li>
+                        <li>A qualified service provider will contact you</li>
+                        <li>You'll receive updates on your request status</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE_URL = 'http://localhost:3000/api';
+        let customerData = null;
+
+        // Initialize customer portal
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthentication();
+            updateCurrentDate();
+        });
+
+        function checkAuthentication() {
+            const token = localStorage.getItem('customerToken');
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+
+            // Verify token and get customer data
+            fetch(`${API_BASE_URL}/auth/profile`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.type === 'customer') {
+                    customerData = data.user;
+                    document.getElementById('customerName').textContent = customerData.name;
+                    loadCustomerData();
+                } else {
+                    localStorage.removeItem('customerToken');
+                    window.location.href = '/';
+                }
+            })
+            .catch(error => {
+                console.error('Authentication error:', error);
+                localStorage.removeItem('customerToken');
+                window.location.href = '/';
+            });
+        }
+
+        function loadCustomerData() {
+            // This would load customer-specific data
+            // For now, we'll use placeholder data
+            document.getElementById('totalRequests').textContent = '0';
+            document.getElementById('pendingRequests').textContent = '0';
+            document.getElementById('scheduledAppointments').textContent = '0';
+            document.getElementById('completedServices').textContent = '0';
+        }
+
+        function updateCurrentDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
+        }
+
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + '-section').style.display = 'block';
+            
+            // Update nav active state
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+        }
+
+        // New Request Form Handler
+        document.getElementById('newRequestForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting...';
+            submitBtn.disabled = true;
+            
+            const formData = new FormData(e.target);
+            const requestData = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/leads`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Request created:', result);
+                    
+                    // Reset form
+                    e.target.reset();
+                    
+                    // Show success modal
+                    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                    successModal.show();
+                    
+                    // Switch to requests section
+                    setTimeout(() => {
+                        showSection('requests');
+                    }, 2000);
+                } else {
+                    throw new Error('Failed to submit request');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Sorry, there was an error submitting your request. Please try again.');
+            } finally {
+                // Restore button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        function filterRequests(status) {
+            // Filter functionality would be implemented here
+            const buttons = document.querySelectorAll('.btn-group button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('customerToken');
+                window.location.href = '/';
+            }
+        }
+    </script>
+</body>
+</html>

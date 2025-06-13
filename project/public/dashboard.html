@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServiceLead Pro - Provider Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 30px;
+            transition: margin-left 0.3s ease;
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+        .stat-card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        .stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+        .lead-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border-left: 5px solid;
+        }
+        .lead-card:hover {
+            transform: translateX(8px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+        .lead-pending { border-left-color: #ffc107; }
+        .lead-contacted { border-left-color: #17a2b8; }
+        .lead-qualified { border-left-color: #28a745; }
+        .lead-converted { border-left-color: #007bff; }
+        .lead-closed { border-left-color: #6c757d; }
+        .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            border-radius: 12px;
+            margin: 8px 15px;
+            padding: 12px 20px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: white !important;
+            transform: translateX(5px);
+        }
+        .profile-section {
+            padding: 25px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .profile-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+        }
+        .score-badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 280px;
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+        }
+        .btn-action {
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+        .btn-action:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar text-white" id="sidebar">
+        <div class="profile-section">
+            <div class="d-flex align-items-center">
+                <div class="profile-img d-flex align-items-center justify-content-center me-3">
+                    <i class="fas fa-user fa-lg"></i>
+                </div>
+                <div>
+                    <h5 class="mb-1">Loading...</h5>
+                    <small class="opacity-75">Service Provider</small>
+                </div>
+            </div>
+        </div>
+        <nav class="nav flex-column py-3">
+            <a class="nav-link active" href="#" onclick="showSection('overview')">
+                <i class="fas fa-tachometer-alt me-3"></i>Dashboard Overview
+            </a>
+            <a class="nav-link" href="#" onclick="showSection('leads')">
+                <i class="fas fa-users me-3"></i>Lead Management
+            </a>
+            <a class="nav-link" href="#" onclick="showSection('appointments')">
+                <i class="fas fa-calendar-check me-3"></i>Appointments
+            </a>
+            <a class="nav-link" href="#" onclick="showSection('analytics')">
+                <i class="fas fa-chart-line me-3"></i>Analytics
+            </a>
+            <a class="nav-link" href="#" onclick="showSection('automation')">
+                <i class="fas fa-robot me-3"></i>AI Automation
+            </a>
+            <a class="nav-link" href="#" onclick="showSection('profile')">
+                <i class="fas fa-user-cog me-3"></i>Business Profile
+            </a>
+            <hr class="my-4 mx-3" style="border-color: rgba(255,255,255,0.2);">
+            <a class="nav-link" href="/">
+                <i class="fas fa-home me-3"></i>Back to Home
+            </a>
+            <a class="nav-link" href="#" onclick="logout()">
+                <i class="fas fa-sign-out-alt me-3"></i>Logout
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Mobile Menu Button -->
+        <button class="btn btn-primary d-md-none mb-4" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i> Menu
+        </button>
+
+        <!-- Overview Section -->
+        <div id="overview-section" class="section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="fw-bold mb-2">Dashboard Overview</h1>
+                    <p class="text-muted mb-0">Welcome back! Here's what's happening with your business today.</p>
+                </div>
+                <div class="text-muted">
+                    <i class="fas fa-calendar me-2"></i>
+                    <span id="currentDate"></span>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row g-4 mb-5">
+                <div class="col-xl-3 col-md-6">
+                    <div class="card stat-card text-center p-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <div class="card-body">
+                            <i class="fas fa-users fa-3x mb-3 opacity-75"></i>
+                            <h2 class="mb-1 fw-bold" id="newLeadsCount">0</h2>
+                            <p class="mb-0 opacity-90">New Leads</p>
+                            <small class="opacity-75">This week</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="card stat-card text-center p-4" style="background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%); color: white;">
+                        <div class="card-body">
+                            <i class="fas fa-calendar-check fa-3x mb-3 opacity-75"></i>
+                            <h2 class="mb-1 fw-bold" id="activeJobsCount">0</h2>
+                            <p class="mb-0 opacity-90">Active Jobs</p>
+                            <small class="opacity-75">In progress</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="card stat-card text-center p-4" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white;">
+                        <div class="card-body">
+                            <i class="fas fa-dollar-sign fa-3x mb-3 opacity-75"></i>
+                            <h2 class="mb-1 fw-bold" id="monthlyRevenue">$0</h2>
+                            <p class="mb-0 opacity-90">This Month</p>
+                            <small class="opacity-75">Revenue</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="card stat-card text-center p-4" style="background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%); color: white;">
+                        <div class="card-body">
+                            <i class="fas fa-star fa-3x mb-3 opacity-75"></i>
+                            <h2 class="mb-1 fw-bold" id="rating">0.0</h2>
+                            <p class="mb-0 opacity-90">Rating</p>
+                            <small class="opacity-75">Average</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0 fw-bold">Recent Leads</h4>
+                                <button class="btn btn-outline-primary btn-sm" onclick="showSection('leads')">
+                                    View All
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="recentLeadsList">
+                                <div class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="text-muted mt-3">Loading recent leads...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h4 class="mb-0 fw-bold">Today's Schedule</h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="todaySchedule">
+                                <div class="text-center py-4">
+                                    <i class="fas fa-calendar fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">No appointments scheduled for today</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leads Section -->
+        <div id="leads-section" class="section" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="fw-bold mb-2">Lead Management</h1>
+                    <p class="text-muted mb-0">Manage and track all your leads with AI-powered insights</p>
+                </div>
+                <button class="btn btn-primary" onclick="refreshLeads()">
+                    <i class="fas fa-sync-alt me-2"></i>Refresh Leads
+                </button>
+            </div>
+
+            <!-- Lead Status Filters -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary active" onclick="filterLeads('all')">
+                            All Leads
+                        </button>
+                        <button type="button" class="btn btn-outline-warning" onclick="filterLeads('pending')">
+                            Pending
+                        </button>
+                        <button type="button" class="btn btn-outline-info" onclick="filterLeads('contacted')">
+                            Contacted
+                        </button>
+                        <button type="button" class="btn btn-outline-success" onclick="filterLeads('qualified')">
+                            Qualified
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="filterLeads('converted')">
+                            Converted
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leads List -->
+            <div id="leadsList">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="text-muted mt-3">Loading leads...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other sections (appointments, analytics, automation, profile) -->
+        <div id="appointments-section" class="section" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="fw-bold mb-2">Appointments</h1>
+                    <p class="text-muted mb-0">Schedule and manage your service appointments</p>
+                </div>
+                <button class="btn btn-success" onclick="addAppointment()">
+                    <i class="fas fa-plus me-2"></i>New Appointment
+                </button>
+            </div>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-alt fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Appointment Management</h4>
+                        <p class="text-muted">Schedule and track your service appointments</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="analytics-section" class="section" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="fw-bold mb-2">Analytics & Insights</h1>
+                    <p class="text-muted mb-0">Track your business performance and growth</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="chart-container">
+                        <h5 class="fw-bold mb-3">Lead Conversion Trends</h5>
+                        <canvas id="conversionChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="chart-container">
+                        <h5 class="fw-bold mb-3">Revenue by Service Type</h5>
+                        <canvas id="revenueChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="automation-section" class="section" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="fw-bold mb-2">AI Automation</h1>
+                    <p class="text-muted mb-0">Intelligent lead scoring and automated workflows</p>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="text-center py-5">
+                        <i class="fas fa-robot fa-4x text-primary mb-3"></i>
+                        <h4 class="text-primary">AI-Powered Automation</h4>
+                        <p class="text-muted">Smart lead scoring and automated follow-ups</p>
+                        <button class="btn btn-primary" onclick="triggerAutomation()">
+                            <i class="fas fa-play me-2"></i>Run Lead Scoring
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="profile-section" class="section" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="fw-bold mb-2">Business Profile</h1>
+                    <p class="text-muted mb-0">Manage your business information and settings</p>
+                </div>
+                <button class="btn btn-primary" onclick="editProfile()">
+                    <i class="fas fa-edit me-2"></i>Edit Profile
+                </button>
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <h5 class="fw-bold mb-4">Business Information</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <strong>Business Name:</strong>
+                                    <p class="text-muted mb-0">Loading...</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <strong>Owner Name:</strong>
+                                    <p class="text-muted mb-0">Loading...</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <strong>Email:</strong>
+                                    <p class="text-muted mb-0">Loading...</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <strong>Phone:</strong>
+                                    <p class="text-muted mb-0">Loading...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <div class="profile-img mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 100px; height: 100px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <i class="fas fa-user fa-2x text-white"></i>
+                            </div>
+                            <h5 class="fw-bold">Business Owner</h5>
+                            <p class="text-muted">Service Provider</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
